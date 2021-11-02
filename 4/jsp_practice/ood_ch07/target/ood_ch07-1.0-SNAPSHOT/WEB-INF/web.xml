@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="3.1" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd">
+    <servlet>
+        <servlet-name>Uploadfile</servlet-name>
+        <servlet-class>cse.my_name.ood_ch07.Uploadfile</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>DownloadServlet_fast</servlet-name>
+        <servlet-class>cse.my_name.ood_ch07.file_download.control.DownloadServlet_fast</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>Uploadfile</servlet-name>
+        <url-pattern>/ch07/Uploadfile.do</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>DownloadServlet</servlet-name>
+        <url-pattern>/ch072/download.do</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>DownloadServlet_fast</servlet-name>
+        <url-pattern>/ch073/DownloadServlet_fast.do</url-pattern>
+    </servlet-mapping>
+    <session-config>
+        <session-timeout>
+            30
+        </session-timeout>
+    </session-config>
+</web-app>

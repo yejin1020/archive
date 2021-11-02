@@ -1,0 +1,1021 @@
+// 마지막고침 : 2020.11.17
+/*-----------------------------------------------
+dynstmt_insert_xy.pc
+화면의 특정 위치에서 사용자 입력을 받은 후 테이블에 
+insert 함
+-------------------------------------------------*/
+#define _CRT_SECURE_NO_WARNINGS
+
+//-----------------------------------------
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#include <conio.h>
+
+/* for oracle */
+#include <sqlda.h>
+#include <sqlca.h>
+#include <sqlcpr.h>
+
+//#ifdef WIN32
+#include < windows.h >
+/*---------------  화면 커서 위치 제어 ----------------------*/  
+void gotoxy(int x, int y) ; // 커서를 옮겨서 화면에 위치하게한다
+void getxy(int *x, int *y) ; //커서 현재 위치획득
+void clrscr(void) ; // 텍스트에서 화면을 지움
+/*-----------------------------------------------------------*/
+#define getch() _getch()
+
+void DB_connect();
+void print_screen(char fname[]);
+void sql_error();
+
+void Insert_customer_tuple(); // 고객 주문 정보 insert 함수
+void Update_customer_tuple();  //고객 정보 update 함수
+void Get_cus_tuple();// 고객 레코드 출력 함수
+
+void Update_emp_tuple();//직원 정보 update 함수
+void Get_emp_tuple();// 직원 레코드 출력 함수
+
+void Update_vendor_tuple(); //공급 업체 update 함수
+void Get_vendor_tuple(); // 공급업체 레코드 출력 함수
+
+void Insert_buy_tuple();  // 구매 주문 내역 insert
+void Get_buy_tuple(); //구매 레코드 출력 함수
+
+void Insert_sale_tuple(); // 판매 주문 내역 insert
+void Get_sale_tuple(); //판매 레코드 출력 함수
+
+void Update_inventory_tuple(); // 재고 update 함수
+void Get_inventory_tuple(); //재고 레코드 출력 함수
+
+EXEC SQL BEGIN DECLARE SECTION;
+	VARCHAR uid[80];
+	VARCHAR pwd[20];
+EXEC SQL END DECLARE SECTION;
+
+int main()
+{
+	int menu_num;
+	
+	 system("mode con cols=130 lines=27"); 
+	_putenv("NLS_LANG=American_America.KO16KSC5601");
+
+	DB_connect();
+	
+while(1){
+
+	system("cls");
+	print_screen("maindisplay.txt");
+	gotoxy(56,21);
+	scanf("%d%*c",&menu_num);
+	
+	switch(menu_num)
+	{
+		case 1: // 고객 추가
+			Insert_customer_tuple();
+			break;
+
+		case 2: // 고객 수정
+			Update_customer_tuple();
+			break;
+
+		case 3: // 직원 관리
+			Update_emp_tuple();
+			break;
+
+		case 4: // 공급업체 관리
+			Update_vendor_tuple();
+			break;
+
+		case 5: // 구매 주문 내역 추가
+			Insert_buy_tuple();
+			break;
+
+		case 6: // 판매 주문 내역 추가
+			Insert_sale_tuple();
+			break;
+
+		case 7: //전체 재고 관리
+			Update_inventory_tuple();
+			break;
+
+		case 8: // 종료
+			printf("exit flower management system...\n");
+			exit(1);
+			break;
+
+		default:
+			printf("select menu number in the list\n");
+			break;
+				
+	}
+
+	system("PAUSE");
+
+}
+	EXEC SQL COMMIT WORK RELEASE ; // 프로그램 끝날 때 한번 필요. 오라클과 접속을 닫아줌
+	getch();
+}
+
+
+///////////////////////////////////////////////////
+//
+//	데이터 베이스 연결
+//
+//////////////////////////////////////////////////
+
+void DB_connect()
+{
+
+
+   /* 아이디와 패스워드 수정해서 넣으세요*/
+    strcpy((char *)uid.arr,"a20173189@//sedb.deu.ac.kr:1521/orcl");
+    uid.len = (short) strlen((char *)uid.arr);
+    strcpy((char *)pwd.arr,"20173189");
+    pwd.len = (short) strlen((char *)pwd.arr);
+
+    EXEC SQL CONNECT :uid IDENTIFIED BY :pwd;
+
+	// connection이 실패했을경우의 처리부분
+
+    if (sqlca.sqlcode != 0 && sqlca.sqlcode != -1405){ 
+		printf("\7Cconnect error: %s", sqlca.sqlerrm.sqlerrmc);
+		getch();
+		exit(-1);
+    }
+
+    //printf("Oracle Connect SUCCESS by %s\n", uid.arr);
+}
+
+///////////////////////////////////////////////////
+//
+//	고객 정보 insert 함수
+//
+//////////////////////////////////////////////////
+void Insert_customer_tuple()
+{
+
+EXEC SQL BEGIN DECLARE SECTION;
+
+    varchar customer_id[5];
+    varchar name[10];
+    varchar tel[20];
+
+    char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+
+   /* Register sql_error() as the error handler. */
+    EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+
+   /* 고객 화면으로 새로 텍스트 띄우는 부분 */
+   clrscr();
+   gotoxy(0,0);
+   print_screen("customerdisplay.txt");
+
+    /* 고객 구매 정보 입력 */
+
+    /* 고객 번호 입력 */
+    gotoxy(23,9);  // 커서 위치
+    gets(customer_id.arr); // 입력 받음
+    customer_id.len = strlen(customer_id.arr); // 길이정보 저장 varchar 타입
+    
+   /* 고객 이름 입력 */
+    gotoxy(23,12); 
+    gets(name.arr);
+    name.len = strlen(name.arr);
+
+   /* 고객 전화 번호 입력 */
+    gotoxy(23,15) ;
+    gets(tel.arr);
+    tel.len = strlen(tel.arr);
+ 
+    sprintf(dynstmt,"insert into 고객 values ( '%s', '%s', '%s')" ,customer_id.arr, name.arr, tel.arr); //insert 문자형 '' 주의
+
+    /* 실행시킬 SQL 문장*/
+    EXEC SQL EXECUTE IMMEDIATE :dynstmt ;
+
+    gotoxy(1,20);
+    printf("Insert Success\n");
+
+    EXEC SQL COMMIT WORK ;
+}
+
+
+///////////////////////////////////////////////////
+//
+//	고객 정보 update 함수
+//
+//////////////////////////////////////////////////
+void Update_customer_tuple()
+{
+EXEC SQL BEGIN DECLARE SECTION;
+    varchar no[10];
+    varchar name[12];
+    varchar num[16];
+
+    char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+
+   /* Register sql_error() as the error handler. */
+    EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+
+   clrscr();
+   Get_cus_tuple();
+
+   /* 데이터 입력 */
+    gotoxy(20,5) ;
+
+    printf("----- [ 고객 정보 수정 ] -----\n\n");   
+   
+    printf("          고객id:\n");
+    printf("\n"); 
+    printf("          이름:\n");
+    printf("\n");
+    printf("          전화번호:\n");
+    printf("\n");
+   
+
+   /* 고객 id */
+    gotoxy(20,7)  ; 
+    gets(no.arr);
+    no.len = strlen(no.arr);
+    
+   /* 고객 이름 */
+    gotoxy(20,9)  ;
+    gets(name.arr);
+    name.len = strlen(name.arr);
+
+     /* 고객 전화번호 */
+    gotoxy(20,11)  ;
+    gets(num.arr);
+    num.len = strlen(num.arr);
+
+
+    sprintf(dynstmt,"update 고객 set 이름= '%s', 전화번호= '%s' where 고객id =%s",name.arr, num.arr, no.arr);
+
+   /* 실행시킬 SQL 문장*/
+    EXEC SQL EXECUTE IMMEDIATE :dynstmt ;
+
+    printf("Success\n");
+    EXEC SQL COMMIT WORK ;
+
+    gotoxy(0,22);
+    Get_cus_tuple();
+
+}
+
+///////////////////////////////////////////////////
+//
+//	직원 update 함수
+//
+//////////////////////////////////////////////////
+void Update_emp_tuple()
+{
+EXEC SQL BEGIN DECLARE SECTION;
+    varchar no[10];
+    varchar name[12];
+    varchar num[16];
+    varchar sal[16];
+
+    char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+
+   /* Register sql_error() as the error handler. */
+    EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+
+   clrscr();
+   Get_emp_tuple();
+
+   /* 데이터 입력 */
+    gotoxy(20,5) ;
+
+    printf("----- [ 직원 정보 수정 ] -----\n\n");   
+   
+    printf("          직원id:\n");
+    printf("\n");
+    printf("          이름:\n");
+    printf("\n");
+    printf("          전화번호:\n");
+    printf("\n");
+    printf("          급여:\n");
+    printf("\n");
+
+
+
+   /* 판매번호 */
+    gotoxy(20,7)  ; 
+    gets(no.arr);
+    no.len = strlen(no.arr);
+    
+   /* 판매날짜 */
+    gotoxy(20,9)  ;
+    gets(name.arr);
+    name.len = strlen(name.arr);
+
+    gotoxy(20,11)  ;
+    gets(num.arr);
+    num.len = strlen(num.arr);
+
+    gotoxy(20,13)  ;
+    gets(sal.arr);
+    sal.len = strlen(sal.arr);
+
+    sprintf(dynstmt,"update 직원 set 이름= '%s', 전화번호= '%s', 급여= '%s' where 직원id = %s" , name.arr, num.arr, sal.arr,no.arr );
+
+   /* 실행시킬 SQL 문장*/
+    EXEC SQL EXECUTE IMMEDIATE :dynstmt ;
+
+    printf("Success\n");
+    EXEC SQL COMMIT WORK ;
+
+    gotoxy(0,22);
+    Get_emp_tuple();
+}
+
+
+///////////////////////////////////////////////////
+//
+//	공급 업체 update 함수
+//
+//////////////////////////////////////////////////
+void Update_vendor_tuple()
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+    varchar vid[10];
+    varchar name[12];
+    varchar tel[16];
+
+    char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+
+   /* Register sql_error() as the error handler. */
+    EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+
+    clrscr();
+    Get_vendor_tuple();
+
+   /* 데이터 입력 */
+    gotoxy(20,5) ;
+
+    printf("----- [ 공급 업체 정보 수정 ] -----\n\n");   
+   
+    printf("          업체id:\n");
+    printf("\n"); 
+    printf("          이름:\n");
+    printf("\n");
+    printf("          전화번호:\n");
+    printf("\n");
+
+   /* 업체 id */
+    gotoxy(20,7)  ; 
+    gets(vid.arr);
+    vid.len = strlen(vid.arr);
+    
+   /* 업체 이름 */
+    gotoxy(20,9)  ;
+    gets(name.arr);
+    name.len = strlen(name.arr);
+
+    /*업체 번호*/
+    gotoxy(20,11)  ;
+    gets(tel.arr);
+    tel.len = strlen(tel.arr);
+
+
+    sprintf(dynstmt,"update 공급업체 set 이름= '%s', 전화번호= '%s' where 공급업체id= %s" , name.arr, tel.arr, vid.arr );
+
+   /* 실행시킬 SQL 문장*/
+    EXEC SQL EXECUTE IMMEDIATE :dynstmt ;
+
+    printf("Success\n");
+    EXEC SQL COMMIT WORK ;
+	
+    gotoxy(0,22);
+    Get_vendor_tuple();
+
+
+}
+
+
+///////////////////////////////////////////////////
+//
+//	구매 주문 내역 insert 함수
+//
+//////////////////////////////////////////////////
+void Insert_buy_tuple()
+{
+
+EXEC SQL BEGIN DECLARE SECTION;
+    varchar id[10];
+    varchar no[10];
+    varchar date[12];
+    varchar vid[10];
+    varchar eid[10];
+    varchar sta[10];
+
+    char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+   
+   /* Register sql_error() as the error handler. */
+    EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+
+   clrscr();
+   Get_buy_tuple();
+
+   /* 데이터 입력 */
+    gotoxy(20,5) ;
+
+    printf(" [ 구매 목록 추가 ]\n\n");   
+   
+    printf("          물품id:\n");
+    printf("\n");
+    printf("          구매번호:\n");
+    printf("\n");
+    printf("          공급업자id:\n");
+    printf("\n");
+    printf("          직원id:\n");
+    printf("\n");
+
+   /* 물품id */
+    gotoxy(20,7)  ; 
+    gets(id.arr);
+    id.len = strlen(id.arr);
+
+    /* 구매번호 */
+    gotoxy(20,9)  ; 
+    gets(no.arr);
+    no.len = strlen(no.arr);
+
+
+   /* 공급업체id */
+    gotoxy(22,11) ;
+    gets(vid.arr);
+    vid.len = strlen(vid.arr);
+	
+   /* 직원id  */
+    gotoxy(20,13) ;
+    gets(eid.arr);
+    eid.len = strlen(eid.arr);
+
+    sprintf(dynstmt,"insert into 구매목록 values ( '%s', '%s', SYSDATE, '%s', '%s', '구매완료')", id.arr, no.arr, vid.arr, eid.arr);
+
+   /* 실행시킬 SQL 문장*/
+    EXEC SQL EXECUTE IMMEDIATE :dynstmt ;
+
+    printf("Success\n");
+    EXEC SQL COMMIT WORK ;
+
+}
+///////////////////////////////////////////////////
+//
+//	판매 주문 내역 insert 함수
+//
+//////////////////////////////////////////////////
+void Insert_sale_tuple()
+{
+
+EXEC SQL BEGIN DECLARE SECTION;
+    varchar id[10];
+    varchar no[10];
+    varchar date[12];
+    varchar cid[10];
+    varchar eid[10];
+
+    char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+   
+   /* Register sql_error() as the error handler. */
+    EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+
+   clrscr();
+   Get_sale_tuple();
+
+   /* 데이터 입력 */
+    gotoxy(20,5) ;
+
+    printf(" [ 판매주문내역 추가 ]\n\n");   
+   
+    printf("          물품id:\n");
+    printf("\n");
+    printf("          판매번호:\n");
+    printf("\n");
+    printf("          고객id:\n");
+    printf("\n");
+    printf("          직원id:\n");
+    printf("\n");
+
+   /* 판매번호 */
+    gotoxy(20,7)  ; 
+    gets(id.arr);
+    id.len = strlen(id.arr);
+
+    gotoxy(20,9)  ; 
+    gets(no.arr);
+    no.len = strlen(no.arr);
+    
+   /* 고객id */
+    gotoxy(20,11) ;
+    gets(cid.arr);
+    cid.len = strlen(cid.arr);
+	
+   /* 직원id  */
+    gotoxy(20,13) ;
+    gets(eid.arr);
+    eid.len = strlen(eid.arr);
+
+
+    sprintf(dynstmt,"insert into 판매주문내역 values ( '%s', '%s', SYSDATE, '%s', '%s', '판매완료')", id.arr, no.arr,  cid.arr, eid.arr);
+
+ 
+    //printf("stmt:%s\n", dynstmt);
+    //printf("\n");
+   /* 실행시킬 SQL 문장*/
+    EXEC SQL EXECUTE IMMEDIATE :dynstmt ;
+
+    printf("Success\n");
+    EXEC SQL COMMIT WORK ;
+
+}
+///////////////////////////////////////////////////
+//
+//	재고 update 함수
+//
+//////////////////////////////////////////////////
+void Update_inventory_tuple()
+{
+
+EXEC SQL BEGIN DECLARE SECTION;
+    varchar no[10];
+    varchar amount[12];
+
+    char dynstmt[1000];
+    char dynstmt2[1000];
+EXEC SQL END DECLARE SECTION;
+
+   
+
+   /* Register sql_error() as the error handler. */
+    EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+
+   clrscr();
+ 
+    /* 화면 출력 */
+    gotoxy(0,0) ;
+    print_screen("inventory.txt");
+
+     /* 재고 목록 출력 */
+    gotoxy(1,20);
+    Get_inventory_tuple();
+
+   /* 판매번호 */
+    gotoxy(23,6); 
+    gets(no.arr);
+    no.len = strlen(no.arr);
+    
+   /* 수량  */
+    gotoxy(23,9);
+    gets(amount.arr);
+    amount.len = strlen(amount.arr);
+
+    sprintf(dynstmt,"update 재고 set 물품수량 = 물품수량 + %s where 물품id = '%s'",amount.arr, no.arr);
+
+   /* 실행시킬 SQL 문장*/
+    EXEC SQL EXECUTE IMMEDIATE :dynstmt ;
+
+    sprintf(dynstmt2,"update 재고 set 재고수정날짜=SYSDATE where 물품id = '%s'" , no.arr);
+    EXEC SQL EXECUTE IMMEDIATE :dynstmt2 ;
+
+    gotoxy(19,13) ;
+    printf("Success\n");
+    EXEC SQL COMMIT WORK ;
+
+     /* 재고 목록 출력 */
+    gotoxy(1,20);
+    Get_inventory_tuple();
+
+}
+
+///////////////////////////////////////////////////
+//
+//	재고 레코드 출력 함수
+//
+//////////////////////////////////////////////////
+void Get_inventory_tuple()
+{
+/* --------------------------------------------------------------------------
+   Retrieve the current maximum employee number
+-------------------------------------------------------------------------- */
+EXEC SQL BEGIN DECLARE SECTION;
+   varchar no[100];
+   varchar name[100];
+
+   varchar date[100];
+   varchar quat[100];
+
+   char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+   char no_temp[10];
+
+   /* Register sql_error() as the error handler. */
+   EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+ 
+   /* 실행시킬 SQL 문장*/
+   sprintf(dynstmt,"SELECT 물품id, to_date(재고수정날짜,'YYYY-MM-DD'), 물품수량, 꽃이름 FROM 재고"); 
+   /* select 문장이 제대로 구성되어 있는지 화면에 찍어봄 */
+   //printf("SQL:%s\n", dynstmt);
+
+   EXEC SQL PREPARE S1 FROM :dynstmt ;
+
+   /* cursor 선언 */
+   EXEC SQL DECLARE inv_cursor CURSOR FOR S1 ; 
+
+   /* cursor open */
+   EXEC SQL OPEN inv_cursor ; 
+
+   EXEC SQL WHENEVER NOT FOUND do break;
+   
+   for (;;)
+    {
+        EXEC SQL FETCH inv_cursor INTO :no, :date, :quat, :name;
+
+            no.arr[no.len] = '\0';
+            date.arr[date.len] = '\0';
+            quat.arr[quat.len] = '\0';
+	    name.arr[name.len] = '\0';
+
+	printf("물품 번호:%s , 재고수정날짜:%s, 물품수량:%s, 꽃이름:%s\n", no.arr, date.arr, quat.arr, name.arr);
+    }
+
+    /* 전송된 투플의 수를 출력함. */
+    //printf("match tuple no : %d\n", sqlca.sqlerrd[2]);
+
+    /* Close the cursor. */
+   EXEC SQL CLOSE inv_cursor;
+
+
+}
+///////////////////////////////////////////////////
+//
+//	직원 레코드 출력 함수
+//
+//////////////////////////////////////////////////
+void Get_emp_tuple()
+{
+/* --------------------------------------------------------------------------
+   Retrieve the current maximum employee number
+-------------------------------------------------------------------------- */
+EXEC SQL BEGIN DECLARE SECTION;
+   varchar no[100];
+   varchar name[100];
+   varchar tel[100];
+   varchar sal[100];
+
+   char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+
+   /* Register sql_error() as the error handler. */
+   EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+ 
+   /* 실행시킬 SQL 문장*/
+   sprintf(dynstmt,"SELECT 직원id, 이름, 전화번호, 급여 FROM 직원"); 
+   /* select 문장이 제대로 구성되어 있는지 화면에 찍어봄 */
+   //printf("SQL:%s\n", dynstmt);
+
+   EXEC SQL PREPARE S FROM :dynstmt ;
+
+   /* cursor 선언 */
+   EXEC SQL DECLARE emp_cursor CURSOR FOR S ; 
+
+   /* cursor open */
+   EXEC SQL OPEN emp_cursor ; 
+   EXEC SQL WHENEVER NOT FOUND DO break;
+
+   printf("\n\n\n\n\n\n");
+    for (;;)
+    {
+        EXEC SQL FETCH emp_cursor INTO :no, :name, :tel, :sal;
+
+            no.arr[no.len] = '\0';
+            name.arr[name.len] = '\0';
+            tel.arr[tel.len] = '\0';
+	    sal.arr[sal.len] = '\0';
+	printf("직원id:%s , 이름:%s, 전화번호:%s, 급여:%s\n", no.arr, name.arr, tel.arr, sal.arr);
+    }
+    /* 전송된 투플의 수를 출력함. */
+    printf("match tuple no : %d\n", sqlca.sqlerrd[2]);
+
+    /* Close the cursor. */
+   EXEC SQL CLOSE emp_cursor;
+
+
+}
+///////////////////////////////////////////////////
+//
+//	공급업체  레코드 출력 함수
+//
+//////////////////////////////////////////////////
+void Get_vendor_tuple()
+{
+/* --------------------------------------------------------------------------
+   Retrieve the current maximum employee number
+-------------------------------------------------------------------------- */
+EXEC SQL BEGIN DECLARE SECTION;
+   varchar no[10];
+   varchar name[30];
+   varchar tel[20];
+
+   char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+
+   /* Register sql_error() as the error handler. */
+   EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+ 
+   /* 실행시킬 SQL 문장*/
+   sprintf(dynstmt,"SELECT 공급업체id, 이름, 전화번호 FROM 공급업체"); 
+   /* select 문장이 제대로 구성되어 있는지 화면에 찍어봄 */
+   //printf("SQL:%s\n", dynstmt);
+
+   EXEC SQL PREPARE S FROM :dynstmt ;
+
+   /* cursor 선언 */
+   EXEC SQL DECLARE ven_cursor CURSOR FOR S ; 
+
+   /* cursor open */
+   EXEC SQL OPEN ven_cursor ; 
+   printf("\n\n\n\n\n\n");
+  for (;;)
+    {
+        EXEC SQL WHENEVER NOT FOUND DO break;
+        EXEC SQL FETCH ven_cursor INTO :no, :name, :tel;
+
+            no.arr[no.len] = '\0';
+            name.arr[name.len] = '\0';
+            tel.arr[tel.len] = '\0';
+	    printf("업체id:%s , 이름:%s, 전화번호:%s:\n", no.arr, name.arr, tel.arr);
+    }
+    /* 전송된 투플의 수를 출력함. */
+    printf("match tuple no : %d\n", sqlca.sqlerrd[2]);
+
+    /* Close the cursor. */
+   EXEC SQL CLOSE ven_cursor;
+
+
+}
+///////////////////////////////////////////////////
+//
+//	고객  레코드 출력 함수
+//
+//////////////////////////////////////////////////
+void Get_cus_tuple()
+{
+/* --------------------------------------------------------------------------
+   Retrieve the current maximum employee number
+-------------------------------------------------------------------------- */
+EXEC SQL BEGIN DECLARE SECTION;
+   varchar no[10];
+   varchar name[15];
+   varchar tel[20];
+
+   char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+
+   /* Register sql_error() as the error handler. */
+   EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+ 
+   /* 실행시킬 SQL 문장*/
+   sprintf(dynstmt,"SELECT 고객id, 이름, 전화번호 FROM 고객"); 
+ 
+   EXEC SQL PREPARE S FROM :dynstmt ;
+
+   /* cursor 선언 */
+   EXEC SQL DECLARE cus_cursor CURSOR FOR S ; 
+
+   /* cursor open */
+   EXEC SQL OPEN cus_cursor ; 
+   printf("\n\n\n\n\n\n");
+    for (;;)
+    {
+        EXEC SQL WHENEVER NOT FOUND DO break;
+        EXEC SQL FETCH cus_cursor INTO :no, :name, :tel;
+
+            no.arr[no.len] = '\0';
+            name.arr[name.len] = '\0';
+            tel.arr[tel.len] = '\0';
+	printf("고객id:%s , 이름:%s, 전화번호:%s:\n", no.arr, name.arr, tel.arr);
+    }
+    /* 전송된 투플의 수를 출력함. */
+    printf("match tuple no : %d\n", sqlca.sqlerrd[2]);
+
+    /* Close the cursor. */
+   EXEC SQL CLOSE cus_cursor;
+
+
+}
+///////////////////////////////////////////////////
+//
+//	구매 목록  레코드 출력 함수
+//
+//////////////////////////////////////////////////
+void Get_buy_tuple()
+{
+/* --------------------------------------------------------------------------
+   Retrieve the current maximum employee number
+-------------------------------------------------------------------------- */
+EXEC SQL BEGIN DECLARE SECTION;
+    varchar id[10];
+    varchar no[10];
+    varchar date[12];
+    varchar vid[10];
+    varchar eid[10];
+    varchar sta[10];
+
+    char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+
+   /* Register sql_error() as the error handler. */
+   EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+ 
+   /* 실행시킬 SQL 문장*/
+   sprintf(dynstmt,"SELECT * FROM 구매목록"); 
+ 
+   EXEC SQL PREPARE S FROM :dynstmt ;
+
+   /* cursor 선언 */
+   EXEC SQL DECLARE buy_cursor CURSOR FOR S ; 
+
+   /* cursor open */
+   EXEC SQL OPEN buy_cursor ; 
+   printf("\n\n\n\n\n\n");
+    for (;;)
+    {
+        EXEC SQL WHENEVER NOT FOUND DO break;
+        EXEC SQL FETCH buy_cursor INTO :id, :no, :date, :vid, :eid, :sta;
+
+            id.arr[id.len] = '\0';
+            no.arr[no.len] = '\0';
+            date.arr[date.len] = '\0';
+	    vid.arr[vid.len] = '\0';
+            eid.arr[eid.len] = '\0';
+            sta.arr[sta.len] = '\0';
+
+	printf("물품id:%s , 구매번호:%s, 구매날짜:%s, 공급업체id:%s, 직원id:%s, 구매상태:%s \n", id.arr, no.arr, date.arr,vid.arr,eid.arr,sta.arr);
+    }
+    /* 전송된 투플의 수를 출력함. */
+    printf("match tuple no : %d\n", sqlca.sqlerrd[2]);
+
+    /* Close the cursor. */
+   EXEC SQL CLOSE buy_cursor;
+
+
+}
+///////////////////////////////////////////////////
+//
+//	판매 목록  레코드 출력 함수
+//
+//////////////////////////////////////////////////
+void Get_sale_tuple()
+{
+/* --------------------------------------------------------------------------
+   Retrieve the current maximum employee number
+-------------------------------------------------------------------------- */
+EXEC SQL BEGIN DECLARE SECTION;
+    varchar id[10];
+    varchar no[10];
+    varchar date[12];
+    varchar cid[10];
+    varchar eid[10];
+    varchar sta[10];
+
+    char dynstmt[1000];
+EXEC SQL END DECLARE SECTION;
+
+
+   /* Register sql_error() as the error handler. */
+   EXEC SQL WHENEVER SQLERROR DO sql_error("\7ORACLE ERROR:\n");
+ 
+   /* 실행시킬 SQL 문장*/
+   sprintf(dynstmt,"SELECT * FROM 판매주문내역"); 
+ 
+   EXEC SQL PREPARE S FROM :dynstmt ;
+
+   /* cursor 선언 */
+   EXEC SQL DECLARE sale_cursor CURSOR FOR S ; 
+
+   /* cursor open */
+   EXEC SQL OPEN sale_cursor ; 
+   EXEC SQL WHENEVER NOT FOUND DO break;
+
+   printf("\n\n\n\n\n\n");
+    for (;;)
+    {
+        EXEC SQL FETCH buy_cursor INTO :id, :no, :date, :cid, :eid, :sta;
+
+            id.arr[id.len] = '\0';
+            no.arr[no.len] = '\0';
+            date.arr[date.len] = '\0';
+	    cid.arr[cid.len] = '\0';
+            eid.arr[eid.len] = '\0';
+            sta.arr[sta.len] = '\0';
+
+	printf("물품id:%s , 판매번호:%s, 판매날짜:%s, 고객id:%s, 직원id:%s, 판매상태:%s \n", id.arr, no.arr, date.arr,cid.arr,eid.arr,sta.arr);
+    }
+    /* 전송된 투플의 수를 출력함. */
+    printf("match tuple no : %d\n", sqlca.sqlerrd[2]);
+
+    /* Close the cursor. */
+   EXEC SQL CLOSE sale_cursor;
+
+
+}
+///////////////////////////////////////////////////
+//
+//	화면 텍스트 출력 함수
+//
+//////////////////////////////////////////////////
+void print_screen(char fname[])
+{
+	FILE *fp;
+	char line[130];
+
+	if ( (fp = fopen(fname,"r"))  == NULL ){
+		printf("file open error\n");
+		getch();
+		exit(-1);
+	}
+	while(1)
+	{
+		if( fgets(line, 129, fp) == NULL){
+		     break;
+		}
+		printf("%s", line);
+	}
+
+	fclose(fp);
+}
+
+
+
+/* --------------------------------------------------------------------------
+int sql_error()
+
+   errrpt prints the ORACLE error msg and number.
+-------------------------------------------------------------------------- */
+void sql_error(char *msg)
+{
+    char err_msg[128];
+    size_t buf_len, msg_len;
+
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    printf("\n%s\n", msg);
+    buf_len = sizeof (err_msg);
+    sqlglm(err_msg, &buf_len, &msg_len);
+    printf("%.*s\n", msg_len, err_msg);
+
+    getch();
+    EXEC SQL ROLLBACK WORK;
+    //exit(EXIT_FAILURE);
+}
+/*---------------  화면 커서 제어 함수 --------------------*/
+#define STD_HANDLE GetStdHandle(STD_OUTPUT_HANDLE)
+
+void gotoxy(int x, int y)
+{
+    COORD Cur= {(SHORT)x, (SHORT) y};
+
+    SetConsoleCursorPosition(STD_HANDLE, Cur);
+}
+
+void getxy(int *x, int *y)
+{
+    CONSOLE_SCREEN_BUFFER_INFO Buf ;
+
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &Buf);
+    *x = (int)Buf.dwCursorPosition.X ;
+    *y = (int)Buf.dwCursorPosition.Y ;
+ 
+}
+
+void clrscr(void)
+{
+    COORD Cur= {0, 0};
+    unsigned long dwLen;
+
+    FillConsoleOutputCharacter(STD_HANDLE, ' ', 130*30, Cur, &dwLen);
+}
+
+/*---------------------------------------------------------*/

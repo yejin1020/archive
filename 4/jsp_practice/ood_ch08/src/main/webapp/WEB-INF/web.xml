@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="3.1" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd">
+    <context-param>
+        <description>개 울음 소리
+</description>
+        <param-name>dog sound</param-name>
+        <param-value>멍멍</param-value>
+    </context-param>
+    <filter>
+        <filter-name>FileFilter</filter-name>
+        <filter-class>cse.my_name.ood_ch08.filter.FileFilter</filter-class>
+    </filter>
+    <filter>
+        <filter-name>Upper2LowerFilter</filter-name>
+        <filter-class>cse.my_name.ood_ch08.filter.Upper2LowerFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>FileFilter</filter-name>
+        <url-pattern>/FileDownloadWithFilter/download.do</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>Upper2LowerFilter</filter-name>
+        <servlet-name>DownloadServlet_ch08</servlet-name>
+    </filter-mapping>
+    <listener>
+        <description>ServletContextListener 초기화</description>
+        <listener-class>cse.my_name.ood_ch08.init_parameter.MyServletContextListener</listener-class>
+    </listener>
+    <servlet>
+        <servlet-name>MyServlets</servlet-name>
+        <servlet-class>cse.my_name.ood_ch08.init_parameter.MyServlet</servlet-class>
+        <init-param>
+            <param-name>cat sound</param-name>
+            <param-value>야옹</param-value>
+        </init-param>
+    </servlet>
+    <servlet>
+        <servlet-name>DownloadServlet_ch08</servlet-name>
+        <servlet-class>cse.my_name.ood_ch08.control.DownloadServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MyServlets</servlet-name>
+        <url-pattern>/ch08/myservlet.do</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>DownloadServlet_ch08</servlet-name>
+        <url-pattern>/FileDownloadWithFilter/download.do</url-pattern>
+    </servlet-mapping>
+    <session-config>
+        <session-timeout>
+            30
+        </session-timeout>
+    </session-config>
+</web-app>

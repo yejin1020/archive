@@ -1,0 +1,441 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#define SIZE 50
+/*
+      단어장을 관리하는 프로그램을 작성하세요.
+   - 관리내용 : 단어저장, 단어검색, 단어수정, 단어삭제
+   - 단어는 단어와 뜻을 따로 저장하는 구조체로 관리합니다.
+   - 단어장 내용은 모두 파일로 저장합니다.
+ */
+struct voca {
+   char word[SIZE]; //영어단어
+   char mean[SIZE]; //영단어뜻 
+   char output[SIZE];//결과
+   char change[SIZE];//수정에 사용   
+};
+
+struct voca v;
+
+void save(FILE *fp);
+void search(FILE *fp);
+void change(FILE *fp);
+void del(FILE *fp);
+
+int main() {
+   
+   int i, c;
+   
+   FILE *fp = NULL; //쓰레기값 제거 //* 넣어야 하는 이유는??  
+   fp = fopen("word.txt", "a+"); //단어장 열기 
+   //"w"는 열 때 마다 지워지므로 뒤에 추가되는 "a"를 사용 
+   
+   if(fp == NULL)//단어장이 없다면 실패 출력
+   {   printf("파일 열기 실패\n");
+      exit(1);
+   }
+   else
+      printf("파일 열기 성공\n");
+     
+    printf("단어장 프로그램입니다. 원하는 기능을 입력해주세요.\n");
+   printf("1. 단어저장 2. 단어검색 3. 단어수정 4. 단어삭제\n");   
+    scanf("%d", &c);    
+    
+   switch(c){
+        //단어저장
+      case 1: 
+         save(fp);
+         break;
+      //단어검색    
+      case 2:
+         search(fp);
+         break;
+      //단어수정        
+      case 3:
+          change(fp);
+         break;
+      //단어삭제
+      case 4:
+         del(fp);
+         break;
+      
+      default: //1,2,3,4 아닐 때 
+         printf("잘못된 입력입니다. 다시 시작해주십시오."); 
+         break;
+         
+   }fclose(fp);
+   return 0;
+}
+
+void save(FILE *fp){
+   int i, t;
+      
+   printf("몇개를 입력할 것인가요?(숫자만 입력하세요) : ");
+   scanf("%d", &t); //문자 입력하면 안되게 하려면?? 
+            
+   for(i = 0 ; i < t ; i++){
+            
+      printf("단어를입력하세요 : "); 
+      scanf("%s", v.word); 
+               
+      printf("뜻을 입력하세요 : ");
+      scanf("%s", v.mean);
+            
+      sprintf(v.output,"%s %s\n", v.word, v.mean); //파일이 닫히면 출력된다
+      fputs(v.output, fp);
+   }
+      fclose(fp); //단어장 닫기   
+}      
+
+
+void search(FILE *fp){
+   char str[SIZE];
+   int fp_ret;
+   
+   
+   printf("input : ");
+   scanf("%s", str);
+   fflush(stdin);
+   
+   fseek(fp, 0, SEEK_SET);
+
+   
+   while(1){      
+      fp_ret = fscanf(fp, "%s %s", v.word, v.mean);
+
+
+      if(fp_ret == EOF){
+         printf("EOF\n");
+         break;
+      }
+      
+      if(strcmp(str, v.word) == 0)
+      {
+         printf("result : %s", v.mean);
+         break;
+      }      
+   }
+   
+   fclose(fp);      
+}
+
+void change(FILE *fp){
+   
+   FILE* fp2;
+   
+   char buffer[255]; // qhr
+   char search[255];
+   char change[255];
+   char *word;
+   char *mean;
+   char newWord[255] = { 0, };
+   
+   fp2 = fopen("word_out.txt", "w");
+   
+   printf("찾을 거: ");
+   scanf("%s", search);
+   printf("바꿀 거: ");
+   scanf("%s", change);
+         
+   while (1) 
+   
+   {
+      if (fgets(buffer, 50, fp) == NULL) break; 
+      
+      word = strtok(buffer, " "); //버퍼의 처 주소를 시작으로  시작해서 " "문자가 나올때까지 읽는다 이문자를만나면 공배ㅐㄱ을ㄹ NULL로바꾼다다. 
+      mean = strtok(NULL, "\n");// 그다음 토큰을 분리해내면 그토큰의 시작주소를 가리키는 주소를 반환ㅎ한다. 
+      
+      if (!strcmp(word, search)) // 단어와 찾는 단어가 같으면 0반환 
+      {
+         strcpy(newWord, change); // word를 하게되면 buffer의 시작 주소를 가리키고있던것이어서 buffer의 값이 바뀌게된다. 그래서 buffer의 배열에  
+         fprintf(fp2, "%s %s\n", newWord, mean); //차례대로 복사가 되고  영어 단어가 원래있던 의미의 주소를 넘어가게되면 , 이 줄에서 파일에 출력  
+      }											//출력할때 원래 의미의 주소부터 출력하게되어넘천ㄴ 영어단어가 출력되어지는것이다. 그래서 문자형 포인터word를 사용하지 않고 문자열을 이용해서 buffer의 값을 바꿔주지않게한다!! 
+      else  if (!strcmp(mean, search))
+      {
+         strcpy(mean, change);
+         strcat(mean, "");
+         fprintf(fp2, "%s %s\n", word, mean);
+      }
+      else
+         fprintf(fp2, "%s %s\n", word, mean);
+
+      
+   }
+   
+   fclose(fp);
+   fclose(fp2);
+   
+   if( remove("word.txt") == 0)
+   rename("word_out.txt","word.txt");
+
+
+}     
+
+void del(FILE *fp)
+{   
+   char v1[SIZE];
+   
+   int i, result, number;
+    char del[255];
+    FILE* fp2 = NULL;
+   char buffer[255];
+   char *word;
+   char *mean;
+   
+   fp2 = fopen("word_out.txt", "w");    
+    
+   printf("삭제할 단어(영어): ");   
+   scanf("%s",del);
+      
+   while (1) 
+   {
+      if (fgets(buffer, 50, fp) == NULL) 
+         break;
+      
+      word = strtok(buffer, " ");
+      mean = strtok(NULL, "");
+      
+      if (! strcmp(word,del) )
+      {
+         fgets(buffer, 50, fp);
+         fputs(buffer,fp2);
+            
+      }
+      else 
+         fprintf(fp2, "%s %s", word, mean);   
+      
+   }
+   
+   
+   fclose(fp);
+   fclose(fp2);
+
+   if( remove("word.txt") == 0)
+      rename("word_out.txt","word.txt");
+
+   
+}
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#define SIZE 50
+/*
+   단어장을 관리하는 프로그램을 작성하세요.
+   - 관리내용 : 단어저장, 단어검색, 단어수정, 단어삭제
+   - 단어는 단어와 뜻을 따로 저장하는 구조체로 관리합니다.
+   - 단어장 내용은 모두 파일로 저장합니다.
+ */
+ 
+struct voca 
+{
+   char word[SIZE]; //영어단어
+   char mean[SIZE]; //영단어뜻 
+   char output[SIZE];//결과
+   char change[SIZE];//수정할 단어를 받는 변수   
+}v;
+
+void save(FILE *fp);
+void search(FILE *fp);
+void change(FILE *fp);
+void del(FILE *fp);
+
+int main() 
+{
+
+	int choice;
+
+	FILE *fp = NULL;  //쓰레기값 제거  //* 넣어야 하는 이유는??  
+	fp = fopen("word.txt", "a+"); //단어장 열기 
+	//"w"는 열 때 마다 지워지므로 뒤에 추가되는 "a"를 사용 
+	
+	if(fp == NULL)//단어장이 없다면 실패 출력
+	{   
+		printf("파일 열기 실패\n");
+		exit(1);
+	}
+	else
+		printf("파일 열기 성공\n");
+	
+	printf("단어장 프로그램입니다. 원하는 기능을 입력해주세요.\n");
+	printf("1. 단어저장 2. 단어검색 3. 단어수정 4. 단어삭제\n");   
+	scanf("%d", &choice);    
+	
+	switch(choice)
+	{
+		
+		case 1: //단어저장
+			save(fp);
+			break;
+	
+		case 2:	//단어검색    
+			search(fp);
+			break;
+		     
+		case 3://단어수정   
+			change(fp);
+			break;
+		
+		case 4://단어삭제
+			del(fp);
+			break;
+		
+		default: //1,2,3,4 아닐 때 
+			printf("잘못된 입력입니다. 다시 시작해주십시오."); 
+		break;
+	}
+	
+	fclose(fp);
+	
+	return 0;
+}
+	
+void save(FILE *fp)
+{
+	int i,num;
+	
+	printf("몇개를 입력할 것인가요?(숫자만 입력하세요) : ");
+	scanf("%d", &num);	
+	
+	for(i = 0 ; i < num ; i++)
+	{
+		printf("단어를입력하세요 : "); 
+		scanf("%s", v.word); 
+		
+		printf("뜻을 입력하세요 : ");
+		scanf("%s", v.mean);
+		
+		sprintf(v.output,"%s %s\n", v.word, v.mean); //v.output 문자열에 단어와 뜻을 저장한다. 
+		fputs(v.output, fp); //단어장 파일이 닫히면 v.output이 파일에 저장된다
+	}
+	
+	fclose(fp); //단어장 닫기   
+}      
+	
+void search(FILE *fp)
+{
+	char str[SIZE];
+	int fp_ret;
+		
+	printf("input : ");
+	scanf("%s", str);
+	fflush(stdin);
+	
+	fseek(fp, 0, SEEK_SET);
+	
+	
+	while(1)
+	{      
+		//파일의 끝을 확인하기위해  fscanf의 반환값을 저장한다.	
+		fp_ret = fscanf(fp, "%s %s", v.word, v.mean);
+		
+		if(fp_ret == EOF)
+		{
+			printf("EOF\n");
+			break;
+		}
+		
+		if(strcmp(str, v.word) == 0)
+		{
+			printf("result : %s", v.mean);
+			break;
+		}      
+	}
+	
+	fclose(fp);      
+}
+	
+void change(FILE *fp)
+{
+	
+	FILE* fp2;
+	
+	char buffer[255]; 
+	char search[255];
+	char change[255];
+	char *word;
+	char *mean;
+	char newWord[255] = { 0, };
+	
+	fp2 = fopen("word_out.txt", "w");
+	
+	printf("찾을 거: ");
+	scanf("%s", search);
+	printf("바꿀 거: ");
+	scanf("%s", change);
+	
+	while (1) 
+	
+	{
+	if (fgets(buffer, 50, fp) == NULL) break; 
+	
+	word = strtok(buffer, " "); //버퍼의 처 주소를 시작으로  시작해서 " "문자가 나올때까지 읽는다 이문자를만나면 공배ㅐㄱ을ㄹ NULL로바꾼다다. 
+	mean = strtok(NULL, "\n");// 그다음 토큰을 분리해내면 그토큰의 시작주소를 가리키는 주소를 반환ㅎ한다. 
+	
+	if (!strcmp(word, search)) // 단어와 찾는 단어가 같으면 0반환 
+	{
+	strcpy(newWord, change); // word를 하게되면 buffer의 시작 주소를 가리키고있던것이어서 buffer의 값이 바뀌게된다. 그래서 buffer의 배열에  
+	fprintf(fp2, "%s %s\n", newWord, mean); //차례대로 복사가 되고  영어 단어가 원래있던 의미의 주소를 넘어가게되면 , 이 줄에서 파일에 출력  
+	}											//출력할때 원래 의미의 주소부터 출력하게되어넘천ㄴ 영어단어가 출력되어지는것이다. 그래서 문자형 포인터word를 사용하지 않고 문자열을 이용해서 buffer의 값을 바꿔주지않게한다!! 
+	else  if (!strcmp(mean, search))
+	{
+	strcpy(mean, change);
+	strcat(mean, "");
+	fprintf(fp2, "%s %s\n", word, mean);
+	}
+	else
+	fprintf(fp2, "%s %s\n", word, mean);
+	
+	
+	}
+	
+	fclose(fp);
+	fclose(fp2);
+	
+	if( remove("word.txt") == 0)
+	rename("word_out.txt","word.txt");	
+}     
+	
+void del(FILE *fp)
+{   
+	char v1[SIZE];
+	
+	int i, result, number;
+	char del[255];
+	FILE* fp2 = NULL;
+	char buffer[255];
+	char *word;
+	char *mean;
+	
+	fp2 = fopen("word_out.txt", "w");    
+
+	printf("삭제할 단어(영어): ");   
+	scanf("%s",del);
+	
+	while (1) 
+	{
+		if (fgets(buffer, 50, fp) == NULL) 
+			break;
+		//단어를 분 
+		word = strtok(buffer, " ");
+		mean = strtok(NULL, "");
+		
+		//만약 삭제하고싶은 단어가 나온다면 그줄은 수정파일에 저장하지 않고 그다음 줄을 읽어서 수정파일에 쓴다. 
+		if (! strcmp(word,del) )
+		{	
+			fgets(buffer, 50, fp);
+			fputs(buffer,fp2);
+		}
+		else 
+			fprintf(fp2, "%s %s", word, mean);   
+	
+	}
+	
+	fclose(fp);
+	fclose(fp2);
+	
+	if( remove("word.txt") == 0) //원본을 지운다. 
+		rename("word_out.txt","word.txt");	//수정된 파일의 이름을 원본파일의 이름으로 바꾼다.	
+}
