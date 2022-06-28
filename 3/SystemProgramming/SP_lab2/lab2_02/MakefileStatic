@@ -1,0 +1,11 @@
+
+staticout : main.o
+	cd libmakefile; make lib ; cd ..
+	gcc -I./libmakefile -o staticout main.c -L./libmakefile -lstatic
+
+main.o : main.c
+	gcc -I./libmakefile -c main.c
+clean :
+	cd libmakefile;make clean;
+	cd ..;rm -f staticout	
+	
