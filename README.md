@@ -35,7 +35,6 @@
     - 쉘에서 인터럽트키 SIGINT, SIGQUIT 구현
     - ls, pwd, cd, mkdir, rmdir, ln, cp, rm, mv, cat 명령 구현
 # 4️⃣   
-- [주식 자동 거래 프로그램](https://github.com/yejin807/Capstone_StockTrader_Teamproject.git)
-  
-  - 수행 역할 
+- [JSP_mavenWebMail_TeamProject](https://github.com/yejin807/JSP_mavenWebMail_TeamProject.git)
+
     
